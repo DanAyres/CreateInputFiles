@@ -1,0 +1,10 @@
+*.[oa]
+*.pyc
+*.event
+*.vtu
+*.so
+*~
+*.dat
+Engine/
+*.pdf
+*/PDF/
