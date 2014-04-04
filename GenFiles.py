@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 
+from Python_Modules.WriteFiles import *
 from Python_Modules.ReadWimsCrossSections import ReadDataFile as WimsData
 from Python_Modules.ReadNJOYCrossSections import ReadDataFile as NjoyData
 from Python_Modules.ReadNJOYCrossSections import WIMSMacrosopicData, FormatNJOYData
 
+import os
 
 #from Python_Modules.WriteSampyFiles import WriteParameterFiles, Sampy_control, EVENT_template, GemFile, GemEVENT_scripts
 #from Python_Modules.Plotting import PlotCorrelationMat, PlotCorrelationData, WriteEigenSpectra
@@ -16,18 +18,21 @@ if __name__ == '__main__':
     set_printoptions(edgeitems=3,infstr='inf', linewidth=150, nanstr='nan', precision=8, suppress=False, threshold=1000) 
     
     wims_file='InputData/FU.radmats'
+#    wims_file='InputData/Godiva6.radmats'
     njoy_file='InputData/3group_lib.dat'
     name = 'FLATTOP_U'
 
 
     
     # Read the wims interface    
-    WimsXS=WimsData(open(wims_file,'r'))
-
+    wims10=True
+    WimsXS=WimsData(open(wims_file,'r'), wims10)
+    
 
 
     NJOY_Extract = ['U235']
     MT_EXTRACT=[18]
+#    MT_EXTRACT=[18,452]
 
     norm=True    # Assume the covariance matrices are realtive - multiply by the wims cross sections
     PCR=False    # Perfectly Correlated Reactions
@@ -45,34 +50,21 @@ if __name__ == '__main__':
     WimsXS=WIMSMacrosopicData(WimsXS, NJOYXS)
 
 
+    #
+    #   Output Files
+    #
+    if not os.path.exists(name):
+        os.makedirs(name)    
     
-#    
-#    """
-#        Produce files for SAMPY and for the associated deterministic code.
-#        The following codes are "supported":
-#            - EVENT
-#    """
-#    folder=name+'_'+str(WimsXS.NG)+'grp'
-#    if MACRO:folder+='Macro'
-#    else: folder+='Micro'
-#    if PCR: folder+='PCR'
-#    print 'Writing Files to " ',folder,' "'
-#    
-#    filename = folder+'/'+name
+    GemFile(name, WimsXS)
+    
+    WriteParameterFiles(name, NJOY_Extract, WimsXS, False)
 
-#    if not os.path.exists(folder):
-#        os.makedirs(folder)
-#    
-#    
-#    GemEVENT_scripts(filename)
-#    
-#    GemFile(filename, WimsXS, MACRO)
-##    GemTestMacro(filename, WimsXS, MACRO)
-#    
-#    
-#    EVENT_template(filename, WimsXS)    
-#    
-#    Sampy_control(filename)
+    EVENT_template(name, WimsXS)    
+    
+    GemEVENT_scripts(name)
+
+    Sampy_control(name)
 #    
 #    WriteParameterFiles(WimsXS.NG, filename, NJOY_Extract, WimsXS, MACRO)
 #    

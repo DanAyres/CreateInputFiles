@@ -59,30 +59,6 @@ class XS():
 ################################################################################
 
 
-def NormWithWimsData(Wims, NJOY, MACRO):
-
-    for nuc in Wims.CrossSections:
-        if nuc.SIGFISS==[]:
-            Wmeans=zeros([2*Wims.NG],float)
-            Wmeans[0:Wims.NG] = nuc.SIGCAP
-            Wmeans[Wims.NG:2*Wims.NG] = [nuc.scatter[0][i,i] for i in range(Wims.NG)]
-        else:
-            Wmeans=zeros([4*Wims.NG],float)
-            Wmeans[0:Wims.NG] = nuc.SIGCAP
-            Wmeans[Wims.NG:2*Wims.NG] = [nuc.scatter[0][i,i] for i in range(Wims.NG)]
-            Wmeans[2*Wims.NG:3*Wims.NG] = nuc.SIGFISS
-            Wmeans[3*Wims.NG:4*Wims.NG] = nuc.FISSNU
-
-        if MACRO:
-            nuc.CovMat=NormCovMat(len(NJOY.cov[nuc.name]),NJOY.cov[nuc.name],Wmeans)
-        else:
-            nuc.CovMat=NormCovMat(len(NJOY.cov[nuc.nuclide]),NJOY.cov[nuc.nuclide],Wmeans)
-
-
-    return Wims      
-     
-
-
 def WIMSMacrosopicData(Wims,data):
     """
         Takes the microscopic data (exception of Zr) produced by NJOY and combine
@@ -99,34 +75,38 @@ def WIMSMacrosopicData(Wims,data):
         Return:
                 data        - Wims maroscopic cross sections with covariance data
     """
-    
+
+    for nuc in Wims.Micro:
+        nuc.CovMat=None    
     
     microcovs={};matcov={}
     for nuc in Wims.Micro:
         
         if nuc.nuclide in data.cov:
             WimsMeans=[]
+            labels=[]
+            reactions=[]
             for r, sig in zip(['102','2','18','452'],[list(nuc.SIGCAP), [nuc.scatter[0][i,i] for i in range(Wims.NG)],list(nuc.SIGFISS), list(nuc.FISSNU)]): 
                 if r in data.reactions[nuc.nuclide]: 
                     WimsMeans.extend(sig)
-            nuc.CovMat=NormCovMat(len(data.cov[nuc.nuclide]),data.cov[nuc.nuclide],WimsMeans)    
+                    if r =='102':
+                        reactions.append('c')
+                        labels.extend( [nuc.name+'_c' + str(i+1) for i in range(Wims.NG)] )
+                    elif r =='2':
+                        reactions.append('s')
+                        labels.extend( [nuc.name+'_s' + str(i+1) for i in range(Wims.NG)] )
+                    elif r =='18':
+                        reactions.append('f')
+                        labels.extend( [nuc.name+'_f' + str(i+1) for i in range(Wims.NG)] )
+                    elif r =='452':
+                        reactions.append('n')
+                        labels.extend( [nuc.name+'_n' + str(i+1) for i in range(Wims.NG)] )
+            nuc.CovMat=NormCovMat(len(data.cov[nuc.nuclide]),data.cov[nuc.nuclide],WimsMeans)   
+            nuc.MP=WimsMeans 
+            nuc.labels=labels
+            nuc.reactions=reactions
             
     return Wims
-
-
-################################################################################
-################################################################################
-
-def Correlated_Reactions(C, N, NG):
-    std=[sqrt(C[i,i]) for i in range(N)]
-    ct=zeros([N,N],float)
-    for i in range(N):
-        for j in range(N):
-            ct[i,j] = std[i]*std[j]
-    for k in range(4):
-        ct[k*NG:(k+1)*NG,k*NG:(k+1)*NG] = C[k*NG:(k+1)*NG,k*NG:(k+1)*NG]
-    return ct
-    
 
 
 ################################################################################
@@ -143,18 +123,6 @@ def NormCovMat(NG,C,mean):
         for j in range(NG):
             CC[i,j] = mean[i]*mean[j]*C[i,j]
     return CC
-
-################################################################################
-################################################################################
-
-def ZeroExpand(Cin, N, Ns):
-    """
-        Puts zeros into a matrix inplace of fission and nubar which only has 
-        capture and scatter.
-    """
-    C = zeros([N,N],float)
-    C[0:Ns,0:Ns] = Cin
-    return C
 
 ################################################################################
 ################################################################################

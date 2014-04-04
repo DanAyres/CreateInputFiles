@@ -27,10 +27,7 @@ class Data:
         self.nuclides=nuclides
         self.MatSpecs=matspec
         
-        if MACRO:        
-            self.CrossSections=MacroList
-        else:
-            self.CrossSections=MicroList
+        self.CrossSections=MicroList
         
 
 class XS:
@@ -115,7 +112,7 @@ def MaterialLists(MATERIALS, matnum):
 ################################################################################
 ################################################################################
 
-def ReadDataFile(wims):
+def ReadDataFile(wims, wims10):
     """
         Read the wims file and return the micro and macro cross sections.
         
@@ -126,8 +123,6 @@ def ReadDataFile(wims):
     """
     
     
-    wims10=True
-        
     MATERIALS=[]
     XS_List=[]
     XS_List_Macro=[]
@@ -210,6 +205,11 @@ def ReadDataFile(wims):
                 elif(line.split()[0].lower() == 'fisschi'):
                     while True:
                         line = wims.readline()
+                        if(line.split()[0].lower() == 'scatter'):
+                            while len(FISSCHI) != NUM_GRPS:
+                                FISSCHI.append(0.0)
+                            wims.seek(wims.tell()-len(line))
+                            break
                         for val in line.split():
                             FISSCHI.append(float(val))
                         if len(FISSCHI) >= NUM_GRPS: break
